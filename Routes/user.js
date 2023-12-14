@@ -39,6 +39,30 @@ route.post('/', async (req, res) => {
     }
 });
 
+route.post('/login', async (req, res) => {
+    try {
+        const { email, password } = req.body
+        const user = await userModel.findOne({ email: email});
+        console.log(user.password);
+        if (user && user.password == password) {
+            res.send({
+                status: 200,
+                user: user,
+            })
+        }else{
+            res.send({
+                status: 403,
+                 err: 'user Not Sign in'
+            }) 
+        }
+    } catch (err) {
+        res.send({
+            status: 403,
+             err,
+        })
+    }
+});
+
 route.put('/:id', async (req, res) => {
     try {
         const user = await userModel.findByIdAndUpdate(req.params.id, { ...req.body }, { new: true });
