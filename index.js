@@ -6,7 +6,7 @@ const cors = require('cors');
 
 app.use(express.json());
 app.use(cors());
-app.use('/user' , userRoutes);
+app.use('/addstudent' , userRoutes);
 // mongodb+srv://junaidsalam639:<password>@cluster0.iip5ehd.mongodb.net/
 mongoose.connect('mongodb+srv://junaidsalam639:user@cluster0.iip5ehd.mongodb.net/')
 .then(()=>{
