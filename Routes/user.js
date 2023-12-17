@@ -1,100 +1,102 @@
 const express = require('express');
-const userModel = require('../Schema/userSchema');
-const route = express.Router();
+const routes = express.Router();
+const userSchema = require('../Schema/userSchema');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const sendResponse = require('../helpers/sendResponse');
 
-route.get('/', async (req, res) => {
+routes.get('/' , async (req, res) => {
     try {
-        const user = await userModel.find();
-        res.send({
-            status: 200,
-            user, user
-        });
+        const user = await userSchema.find();
+        sendResponse(res, 200, user, 'User_Get_All', false);
     } catch (err) {
-        console.log(err.message);
-    }
-})
-
-route.get('/:id', async (req, res) => {
-    try {
-        const user = await userModel.findById(req.params.id);
-        res.send({
-            status: 200,
-            user, user
-        });
-    } catch (err) {
-        console.log(err.message);
-    }
-})
-
-route.post('/', async (req, res) => {
-    try {
-        const user = await userModel.create({ ...req.body });
-        console.log(user);
-        res.send({
-            status: 200,
-            user: user,
-        })
-    } catch (err) {
-        console.log(err.message)
+        sendResponse(res, 400, null, 'User_Not_Found', true);
     }
 });
 
-route.post('/login', async (req, res) => {
+routes.post('/', async (req, res) => {
     try {
-        const { email, password } = req.body
-        const user = await userModel.findOne({ email: email});
-        console.log(user.password);
-        if (user && user.password == password) {
-            res.send({
-                status: 200,
-                user: user,
-            })
-        }else{
-            res.send({
-                status: 403,
-                 err: 'user Not Sign in'
-            }) 
+        const salt = await bcrypt.genSaltSync(10);
+        const hash = await bcrypt.hashSync(req.body.password, salt);
+        req.body.password = hash
+        console.log('hash password-----> ', hash);
+        const user = await userSchema.create({ ...req.body });
+        sendResponse(res, 200, user, 'User_Signup successfully', false);
+    } catch (err) {
+        sendResponse(res, 400, null, 'User_Not_Found', true);
+    }
+});
+
+
+routes.post('/login' , async (req , res) => {
+    try {
+        const { email, password } = req.body;
+        const user = await userSchema.findOne({ email: email });
+        if (user) {
+            const isPasswordValid = await bcrypt.compare(password, user.password);
+            console.log(isPasswordValid);
+            if (isPasswordValid) {
+                const token = await jwt.sign({
+                    data: user
+                }, 'JFKJEKLJREKLNHRKLEJTHRJKLTHEJL')
+                sendResponse(res, 200, { user , token }, 'User_Login', false);
+            } 
+            else {
+                sendResponse(res, 400, null, 'Password Does Not Exist', true);
+            }
+        } 
+        else {
+            sendResponse(res, 400, null, 'Email Does Not Exist', true);
         }
     } catch (err) {
-        res.send({
-            status: 403,
-             err,
-        })
+        sendResponse(res, 400, null, 'User_Not_Found', true);
     }
-});
+}) 
 
-route.put('/:id', async (req, res) => {
+
+
+routes.get('/:id', async (req, res) => {
     try {
-        const user = await userModel.findByIdAndUpdate(req.params.id, { ...req.body }, { new: true });
-        console.log(user);
-        res.send({
-            status: 200,
-            user: user,
-        })
+        const user = await userSchema.findById(req.params.id);
+        sendResponse(res, 200, user, 'User_Get_One', false);
     } catch (err) {
-        console.log(err.message)
+        sendResponse(res, 400, null, 'User_Not_Found', true);
     }
-});
+})
 
-
-route.delete('/:id', async (req, res) => {
+routes.put('/:id', async (req, res) => {
     try {
-        const user = await userModel.findByIdAndDelete(req.params.id);
-        console.log(user);
-        res.send({
-            status: 200,
-            user: user,
-        })
+        const salt = await bcrypt.genSaltSync(10);
+        const hash = await bcrypt.hashSync(req.body.password, salt);
+        req.body.password = hash
+        const user = await userSchema.findByIdAndUpdate(req.params.id, { ...req.body }, { new: true });
+        sendResponse(res, 200, user, 'User_Updated', false);
     } catch (err) {
-        console.log(err.message)
+        sendResponse(res, 400, null, 'User_Not_Found', true);
     }
-});
+})
+
+
+routes.delete('/:id', async (req, res) => {
+    try {
+        const user = await userSchema.findByIdAndDelete(req.params.id)
+        sendResponse(res, 200, user, 'User_Delete', false);
+    } catch (err) {
+        sendResponse(res, 400, null, 'User_Not_Found', true);
+    }
+})
 
 
 
 
 
-module.exports = route
+
+
+module.exports = routes
+
+
+
+
 
 
 
